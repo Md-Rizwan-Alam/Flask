@@ -1,0 +1,807 @@
+#1. Create a Flask app that displays "Hello, World!" on the homepage.
+
+
+pip install Flask
+
+from flask import Flask
+
+# Create a Flask application instance
+app = Flask(__name__)
+
+# Define a route for the homepage
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
+
+# Run the Flask application
+if __name__ == '__main__':
+    app.run()
+
+
+#2. Build a Flask app with static HTML pages and navigate between them.
+
+
+
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/page1')
+def page1():
+    return render_template('page1.html')
+
+@app.route('/page2')
+def page2():
+    return render_template('page2.html')
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+#index.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1>Welcome to the Home Page</h1>
+    <a href="/page1">Go to Page 1</a>
+    <a href="/page2">Go to Page 2</a>
+</body>
+</html>
+
+
+
+#3. Develop a Flask app that uses URL parameters to display dynamic content.
+
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Welcome to the Home Page"
+
+@app.route('/user/<username>')
+def dynamic_content(username):
+    return f"Hello, {username}!"
+
+if __name__ == '__main__':
+    app.run()
+
+
+#dynamic_content.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dynamic Content</title>
+</head>
+<body>
+    <h1>Hello, {{ username }}!</h1>
+</body>
+</html>
+
+
+
+#4. Create a Flask app with a form that accepts user input and displays it.
+
+
+
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    return render_template('form.html')
+
+@app.route('/submit', methods=['POST'])
+def submit():
+    if request.method == 'POST':
+        user_input = request.form['user_input']
+        return f'You entered: {user_input}'
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+#form.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Input Form</title>
+</head>
+<body>
+    <h1>Enter something:</h1>
+    <form method="POST" action="/submit">
+        <input type="text" name="user_input" required>
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>
+
+
+
+
+#5. Implement user sessions in a Flask app to store and display user-specific data.
+
+
+
+pip install Flask-Session
+
+
+from flask import Flask, render_template, request, session, redirect, url_for
+from flask_session import Session
+
+app = Flask(__name__)
+
+# Configure the session type to be used (e.g., in-memory session)
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+
+# Initialize the Flask-Session extension
+Session(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html', user_data=session.get('user_data'))
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    # Store user-specific data in the session
+    session['user_data'] = {'username': username}
+    return redirect(url_for('index'))
+
+@app.route('/logout')
+def logout():
+    # Clear user session data
+    session.pop('user_data', None)
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+#index.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Session Example</title>
+</head>
+<body>
+    <h1>User Session Example</h1>
+
+    {% if user_data %}
+    <p>Welcome, {{ user_data['username'] }}!</p>
+    <a href="/logout">Logout</a>
+    {% else %}
+    <form method="POST" action="/login">
+        <label for="username">Username:</label>
+        <input type="text" name="username" required>
+        <button type="submit">Login</button>
+    </form>
+    {% endif %}
+</body>
+</html>
+
+
+
+
+#6. Build a Flask app that allows users to upload files and display them on the website.
+
+
+from flask import Flask, render_template, request, send_file
+import os
+from werkzeug.utils import secure_filename
+
+app = Flask(__name__)
+
+# Configure the file upload directory
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+@app.route('/')
+def index():
+    return render_template('upload.html')
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return "No file part"
+    file = request.files['file']
+    if file.filename == '':
+        return "No selected file"
+    if file:
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return "File uploaded successfully."
+
+@app.route('/files')
+def list_files():
+    files = os.listdir(app.config['UPLOAD_FOLDER'])
+    return render_template('files.html', files=files)
+
+@app.route('/files/<filename>')
+def serve_file(filename):
+    return send_file(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+#upload.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>File Upload</title>
+</head>
+<body>
+    <h1>Upload a File</h1>
+    <form method="POST" action="/upload" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="submit">Upload</button>
+    </form>
+    <a href="/files">View Uploaded Files</a>
+</body>
+</html>
+
+
+
+
+
+#7. Integrate a SQLite database with Flask to perform CRUD operations on a list of items.
+
+
+from flask import Flask, render_template, request, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+
+# Configure the SQLite database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///items.db'
+db = SQLAlchemy(app)
+
+# Define the Item model
+class Item(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+
+@app.route('/')
+def index():
+    # Retrieve and display the list of items from the database
+    items = Item.query.all()
+    return render_template('index.html', items=items)
+
+@app.route('/add', methods=['POST'])
+def add_item():
+    if request.method == 'POST':
+        name = request.form['name']
+        new_item = Item(name=name)
+        db.session.add(new_item)
+        db.session.commit()
+        return redirect(url_for('index'))
+
+@app.route('/delete/<int:item_id>')
+def delete_item(item_id):
+    item = Item.query.get(item_id)
+    db.session.delete(item)
+    db.session.commit()
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    db.create_all()
+    app.run()
+
+
+
+#index.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Items List</title>
+</head>
+<body>
+    <h1>Items List</h1>
+    <ul>
+        {% for item in items %}
+            <li>{{ item.name }} <a href="/delete/{{ item.id }}">Delete</a></li>
+        {% endfor %}
+    </ul>
+    <form method="POST" action="/add">
+        <input type="text" name="name" placeholder="Add a new item" required>
+        <button type="submit">Add</button>
+    </form>
+</body>
+</html>
+
+
+
+
+
+
+#8. Implement user authentication and registration in a Flask app using Flask-Login.
+
+
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # Replace with a secure secret key
+
+# Configure the SQLite database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+db = SQLAlchemy(app)
+
+# Configure Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+# Define the User model
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(100), nullable=False)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+@app.route('/')
+def index():
+    return render_template('index.html', current_user=current_user)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            return redirect(url_for('index'))
+        else:
+            flash('Login failed. Please check your username and password.')
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        hashed_password = generate_password_hash(password, method='sha256')
+        new_user = User(username=username, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Registration successful. Please log in.')
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+if __name__ == '__main__':
+    db.create_all()
+    app.run()
+
+
+
+#index.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1>Welcome</h1>
+    {% if current_user.is_authenticated %}
+        <p>Hello, {{ current_user.username }}</p>
+        <a href="/logout">Logout</a>
+    {% else %}
+        <a href="/login">Login</a>
+    {% endif %}
+</body>
+</html>
+
+
+
+
+#login.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <h1>Login</h1>
+    <form method="POST" action="/login">
+        <label for="username">Username:</label>
+        <input type="text" name="username" required>
+        <label for="password">Password:</label>
+        <input type="password" name="password" required>
+        <button type="submit">Login</button>
+    </form>
+</body>
+</html>
+
+
+
+#register.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register</title>
+</head>
+<body>
+    <h1>Register</h1>
+    <form method="POST" action="/register">
+        <label for="username">Username:</label>
+        <input type="text" name="username" required>
+        <label for="password">Password:</label>
+        <input type="password" name="password" required>
+        <button type="submit">Register</button>
+    </form>
+</body>
+</html>
+
+
+
+#9. Create a RESTful API using Flask to perform CRUD operations on resources like books or movies.
+
+
+from flask import Flask, request, jsonify
+from flask_sqlalchemy import SQLAlchemy
+
+app = Flask(__name__)
+
+# Configure the SQLite database
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///resources.db'
+db = SQLAlchemy(app)
+
+# Define the Resource model (e.g., "Book" or "Movie")
+class Resource(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    author = db.Column(db.String(100), nullable=True)  # Add more fields as needed
+
+@app.route('/resources', methods=['GET'])
+def get_resources():
+    resources = Resource.query.all()
+    resource_list = []
+    for resource in resources:
+        resource_list.append({
+            'id': resource.id,
+            'title': resource.title,
+            'author': resource.author,
+        })
+    return jsonify(resource_list)
+
+@app.route('/resources/<int:resource_id>', methods=['GET'])
+def get_resource(resource_id):
+    resource = Resource.query.get(resource_id)
+    if resource:
+        return jsonify({
+            'id': resource.id,
+            'title': resource.title,
+            'author': resource.author,
+        })
+    else:
+        return jsonify({'message': 'Resource not found'}), 404
+
+@app.route('/resources', methods=['POST'])
+def create_resource():
+    data = request.get_json()
+    new_resource = Resource(title=data['title'], author=data.get('author'))
+    db.session.add(new_resource)
+    db.session.commit()
+    return jsonify({'message': 'Resource created successfully'}), 201
+
+@app.route('/resources/<int:resource_id>', methods=['PUT'])
+def update_resource(resource_id):
+    resource = Resource.query.get(resource_id)
+    if resource:
+        data = request.get_json()
+        resource.title = data['title']
+        resource.author = data.get('author')
+        db.session.commit()
+        return jsonify({'message': 'Resource updated successfully'})
+    else:
+        return jsonify({'message': 'Resource not found'}), 404
+
+@app.route('/resources/<int:resource_id>', methods=['DELETE'])
+def delete_resource(resource_id):
+    resource = Resource.query.get(resource_id)
+    if resource:
+        db.session.delete(resource)
+        db.session.commit()
+        return jsonify({'message': 'Resource deleted successfully'})
+    else:
+        return jsonify({'message': 'Resource not found'}), 404
+
+if __name__ == '__main__':
+    db.create_all()
+    app.run()
+
+
+
+#10. Design a Flask app with proper error handling for 404 and 500 errors.
+
+
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+# Custom error handling for 404 Not Found
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('404.html'), 404
+
+# Custom error handling for 500 Internal Server Error
+@app.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html'), 500
+
+@app.route('/')
+def index():
+    # Simulate an internal server error
+    1 / 0
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+#404.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>404 Not Found</title>
+</head>
+<body>
+    <h1>404 Not Found</h1>
+    <p>The page you are looking for does not exist.</p>
+</body>
+</html>
+
+
+
+#500.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>500 Internal Server Error</title>
+</head>
+<body>
+    <h1>500 Internal Server Error</h1>
+    <p>Something went wrong on the server.</p>
+</body>
+</html>
+
+
+
+#11. Create a real-time chat application using Flask-SocketIO.
+
+
+
+from flask import Flask, render_template
+from flask_socketio import SocketIO, emit
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with a secure secret key
+socketio = SocketIO(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@socketio.on('message')
+def handle_message(message):
+    emit('message', message, broadcast=True)
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
+
+
+#index.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-Time Chat</title>
+</head>
+<body>
+    <h1>Real-Time Chat</h1>
+    <ul id="chat">
+    </ul>
+    <input id="message_input" autocomplete="off">
+    <button onclick="sendMessage()">Send</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        socket.on('message', function (message) {
+            appendMessage(message);
+        });
+
+        function appendMessage(message) {
+            const chat = document.getElementById('chat');
+            const li = document.createElement('li');
+            li.textContent = message;
+            chat.appendChild(li);
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('message_input');
+            const message = input.value;
+            input.value = '';
+            socket.emit('message', message);
+        }
+    </script>
+</body>
+</html>
+
+
+
+#12. Build a Flask app that updates data in real-time using WebSocket connections.
+
+from flask import Flask, render_template
+from flask_socketio import SocketIO
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with a secure secret key
+socketio = SocketIO(app)
+
+data = 0
+
+@app.route('/')
+def index():
+    return render_template('index.html', data=data)
+
+@socketio.on('update')
+def update_data(new_data):
+    global data
+    data = new_data
+    socketio.emit('data_updated', data, broadcast=True)
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
+
+
+
+#index.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-Time Data Update</title>
+</head>
+<body>
+    <h1>Real-Time Data Update</h1>
+    <p>Data: <span id="data">{{ data }}</span></p>
+    <input id="new_data" type="number">
+    <button onclick="updateData()">Update Data</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        socket.on('connect', function () {
+            console.log('Connected to server');
+        });
+
+        socket.on('data_updated', function (data) {
+            document.getElementById('data').textContent = data;
+        });
+
+        function updateData() {
+            const new_data = document.getElementById('new_data').value;
+            socket.emit('update', new_data);
+        }
+    </script>
+</body>
+</html>
+
+
+#13. Implement notifications in a Flask app using websockets to notify users of updates.
+
+
+
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO, emit
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = 'your_secret_key'  # Replace with a secure secret key
+socketio = SocketIO(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@socketio.on('connect')
+def handle_connect():
+    emit('notification', 'Connected to the server.')
+
+@app.route('/send_notification', methods=['POST'])
+def send_notification():
+    message = request.form.get('message')
+    emit('notification', message, broadcast=True)
+    return "Notification sent."
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
+
+
+
+#index.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Real-Time Notifications</title>
+</head>
+<body>
+    <h1>Real-Time Notifications</h1>
+    <div id="notifications"></div>
+    <form method="POST" action="/send_notification">
+        <input type="text" name="message" placeholder="Enter a notification message" required>
+        <button type="submit">Send Notification</button>
+    </form>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+        const socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        socket.on('connect', function () {
+            console.log('Connected to server');
+        });
+
+        socket.on('notification', function (message) {
+            const notifications = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notifications.appendChild(notification);
+        });
+    </script>
+</body>
+</html>
+
+
+
+
