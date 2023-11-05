@@ -1,0 +1,460 @@
+#Advance Python Project Assignment:
+
+#1. Build a Flask app that scrapes data from multiple websites and displays it on your site. You can try to scrap websites like youtube , amazon and show data on output pages and deploy it on cloud platform .
+
+mkdir web_scraping_app
+cd web_scraping_app
+python -m venv venv
+source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+
+
+pip install Flask requests beautifulsoup4
+
+
+from flask import Flask, render_template, request
+import requests
+from bs4 import BeautifulSoup
+
+app = Flask(__name__)
+
+# Define the route for the homepage
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Define a route to scrape and display YouTube data
+@app.route('/youtube', methods=['POST'])
+def youtube():
+    search_query = request.form.get('search_query')
+    youtube_url = f'https://www.youtube.com/results?search_query={search_query}'
+    response = requests.get(youtube_url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Extract data from the YouTube page (example: titles)
+    video_titles = [element.get_text() for element in soup.find_all('h3', {'class': 'yt-lockup-title'})]
+
+    return render_template('youtube.html', video_titles=video_titles)
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+#templates/index.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web Scraping App</title>
+</head>
+<body>
+    <h1>Web Scraping App</h1>
+    <form action="/youtube" method="post">
+        <label for="search_query">Search YouTube:</label>
+        <input type="text" name="search_query" id="search_query" required>
+        <input type="submit" value="Search">
+    </form>
+</body>
+</html>
+
+
+
+
+#templates/youtube.html:
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Search Results</title>
+</head>
+<body>
+    <h2>YouTube Search Results</h2>
+    <ul>
+        {% for title in video_titles %}
+            <li>{{ title }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+
+
+
+#Create a requirements.txt file using pip freeze > requirements.txt.
+#Create a Procfile with the following content:
+
+
+
+web: python app.py
+
+
+
+#Initialize a Git repository and commit your code:
+
+
+git init
+git add .
+git commit -m "Initial commit"
+
+
+
+#Install Heroku CLI if you haven't already and login:
+
+
+heroku login
+
+
+
+#Create a Heroku app:
+
+
+heroku create your-app-name
+
+
+
+#Deploy your app to Heroku:
+
+
+git push heroku master
+
+
+
+#Open your app in the browser:
+
+
+heroku open
+
+
+
+
+
+#2. Create a Flask app that consumes data from external APIs and displays it to users. Try to find an public API which will give you a data and based on that call it and deploy it on cloud platform
+
+
+mkdir api_consumer_app
+cd api_consumer_app
+python -m venv venv
+source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+
+
+
+pip install Flask requests
+
+
+
+from flask import Flask, render_template
+import requests
+
+app = Flask(__name__)
+
+# Define the route for the homepage
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Define a route to consume data from an external API
+@app.route('/api_data')
+def api_data():
+    # Make a GET request to the JSONPlaceholder API (example)
+    response = requests.get('https://jsonplaceholder.typicode.com/posts')
+
+    if response.status_code == 200:
+        data = response.json()
+    else:
+        data = []
+
+    return render_template('api_data.html', data=data)
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+
+#templates/index.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Consumer App</title>
+</head>
+<body>
+    <h1>API Consumer App</h1>
+    <a href="/api_data">View API Data</a>
+</body>
+</html>
+
+
+
+
+#templates/api_data.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Data</title>
+</head>
+<body>
+    <h2>API Data</h2>
+    <ul>
+        {% for item in data %}
+            <li>{{ item.title }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+
+
+
+#Create a requirements.txt file using pip freeze > requirements.txt.
+#Create a Procfile with the following content:
+
+
+web: python app.py
+
+
+
+#Initialize a Git repository and commit your code:
+
+
+git init
+git add .
+git commit -m "Initial commit"
+
+
+
+#Install Heroku CLI if you haven't already and login:
+
+
+heroku login
+
+
+#Create a Heroku app:
+
+
+heroku create your-app-name
+
+
+#Deploy your app to Heroku:
+
+
+git push heroku master
+
+
+
+#Open your app in the browser:
+
+
+heroku open
+
+
+
+#3. Implement OAuth2 authentication to allow users to log in using their Google or Facebook accounts.
+
+
+mkdir oauth2_auth_app
+cd oauth2_auth_app
+python -m venv venv
+source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+
+
+
+pip install Flask Flask-Dance Flask-Session
+
+
+# config.py
+
+GOOGLE_OAUTH_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'
+GOOGLE_OAUTH_CLIENT_SECRET = 'YOUR_GOOGLE_CLIENT_SECRET'
+
+FACEBOOK_OAUTH_CLIENT_ID = 'YOUR_FACEBOOK_CLIENT_ID'
+FACEBOOK_OAUTH_CLIENT_SECRET = 'YOUR_FACEBOOK_CLIENT_SECRET'
+
+
+
+from flask import Flask, redirect, url_for, render_template
+from flask_dance.contrib.google import make_google_blueprint, google
+from flask_dance.contrib.facebook import make_facebook_blueprint, facebook
+from flask_session import Session
+
+app = Flask(__name__)
+app.secret_key = 'supersecretkey'  # Change this to a secure secret key.
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
+
+from config import GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, \
+    FACEBOOK_OAUTH_CLIENT_ID, FACEBOOK_OAUTH_CLIENT_SECRET
+
+# Configure Google OAuth2
+google_bp = make_google_blueprint(client_id=GOOGLE_OAUTH_CLIENT_ID, client_secret=GOOGLE_OAUTH_CLIENT_SECRET, redirect_to='google_login')
+app.register_blueprint(google_bp, url_prefix='/google_login')
+
+# Configure Facebook OAuth2
+facebook_bp = make_facebook_blueprint(client_id=FACEBOOK_OAUTH_CLIENT_ID, client_secret=FACEBOOK_OAUTH_CLIENT_SECRET, redirect_to='facebook_login')
+app.register_blueprint(facebook_bp, url_prefix='/facebook_login')
+
+@app.route('/')
+def home():
+    if google.authorized:
+        resp = google.get('/plus/v1/people/me')
+        assert resp.ok, resp.text
+        return f'You are connected with Google as {resp.json()["displayName"]}! <a href="/logout">Logout</a>'
+    if facebook.authorized:
+        resp = facebook.get('/me?fields=name,email')
+        assert resp.ok, resp.text
+        return f'You are connected with Facebook as {resp.json()["name"]}! <a href="/logout">Logout</a>'
+    return render_template('index.html')
+
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    google_bp.storage.delete()
+    facebook_bp.storage.delete()
+    return redirect(url_for('home'))
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+
+#templates/login.html:
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+</head>
+<body>
+    <h1>Login</h1>
+    <a href="{{ url_for('google.login') }}">Login with Google</a><br>
+    <a href="{{ url_for('facebook.login') }}">Login with Facebook</a>
+</body>
+</html>
+
+
+
+#templates/index.html:
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1>Home</h1>
+    <a href="/login">Login</a>
+</body>
+</html>
+
+
+
+#5. Run the Flask App To run your Flask app:
+
+python app.py
+
+
+
+
+#4. Develop a recommendation system using Flask that suggests content to users based on their preferences.
+
+
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import linear_kernel
+
+# Sample dataset of movies
+movies = [
+    {'title': 'Movie 1', 'description': 'Action movie with a hero.'},
+    {'title': 'Movie 2', 'description': 'Romantic drama with a love story.'},
+    # Add more movies with descriptions
+]
+
+# Create a TF-IDF vectorizer
+tfidf_vectorizer = TfidfVectorizer(stop_words='english')
+tfidf_matrix = tfidf_vectorizer.fit_transform([movie['description'] for movie in movies])
+
+# Calculate the cosine similarity between movies
+cosine_sim = linear_kernel(tfidf_matrix, tfidf_matrix)
+
+
+
+from flask import Flask, render_template
+
+app = Flask(__name__)
+
+# Define a route for the homepage
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Define a route for content-based recommendations
+@app.route('/recommend/<int:movie_id>')
+def recommend(movie_id):
+    # Your recommendation logic here, based on user preferences and the movie_id
+    # For simplicity, we'll just return the top similar movies in this example
+
+    # Get the top 5 similar movies
+    similar_movies = get_top_similar_movies(movie_id)
+
+    return render_template('recommendations.html', similar_movies=similar_movies)
+
+def get_top_similar_movies(movie_id):
+    # Calculate similarity scores for the given movie
+    similarity_scores = list(enumerate(cosine_sim[movie_id]))
+
+    # Sort movies based on similarity scores
+    sorted_movies = sorted(similarity_scores, key=lambda x: x[1], reverse=True)
+
+    # Get the top 5 similar movies (excluding the same movie)
+    top_similar_movies = [movies[i] for i, _ in sorted_movies if i != movie_id][:5]
+
+    return top_similar_movies
+
+if __name__ == '__main__':
+    app.run()
+
+
+
+#templates/index.html:
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Recommendation System</title>
+</head>
+<body>
+    <h1>Recommendation System</h1>
+    <p><a href="/recommend/0">Get movie recommendations</a></p>
+</body>
+</html>
+
+
+
+#templates/recommendations.html:
+
+
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Movie Recommendations</title>
+</head>
+<body>
+    <h2>Movie Recommendations</h2>
+    <ul>
+        {% for movie in similar_movies %}
+            <li>{{ movie['title'] }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
+
